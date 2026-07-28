@@ -238,16 +238,16 @@ function proceedWhatsApp(){
  let activeWhatsAppNumber = localStorage.getItem("whatsapp_number") || "917857807380";
 
  let tickets=[...ticket.selectedOptions].map(o=>o.value).join(", ");
- let msg=`New Booking
+ let msg=`New Ticket Booking 
+
 Name: ${nameI.value}
 Mobile: ${mobileI.value}
 State: ${state.value}
 
-Tickets:
+Tickets (${ticket.selectedOptions.length}):
 ${tickets}
 
-Total Tickets: ${ticket.selectedOptions.length}
-Amount: ${amount.value}
+Total Amount: ${amount.value}
 Language: ${language.value}`;
 
  window.open("https://wa.me/" + activeWhatsAppNumber + "?text=" + encodeURIComponent(msg), "_blank");
