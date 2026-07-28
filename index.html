@@ -13,18 +13,33 @@ body{margin:0;background:var(--bg);font-family:Arial,sans-serif;display:flex;jus
 @keyframes pulse{0%{transform:scale(1);}50%{transform:scale(1.05);}100%{transform:scale(1);}}
 .timerBar{background:#e8f5e9;color:#1b5e20;padding:6px;border-radius:8px;font-size:12px;text-align:center;font-weight:bold;margin-bottom:6px;}
 h2{text-align:center;margin:6px 0;color:#d9365d;font-size:18px;}
-input,select,button{width:100%;padding:9px;margin-bottom:8px;border-radius:8px;border:1px solid #ddd;font-size:13px;}
+
+input,select,button{width:100%;padding:10px;margin-bottom:8px;border-radius:8px;border:1px solid #ddd;font-size:13px;box-sizing:border-box;transition:all 0.3s ease;}
+input:focus, select:focus{border-color:var(--accent);outline:none;box-shadow:0 0 8px rgba(255,79,121,0.4);}
+
+.error-border {
+  border: 2px solid #ff1744 !important;
+  background: #ffebee !important;
+  animation: shake 0.3s ease-in-out;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+
 .ticketBox{border:2px dashed #ff4f79;border-radius:12px;padding:10px;margin-bottom:8px;}
 .ticketAmount{background:#e8f5e9;color:#1b5e20;padding:6px;border-radius:8px;text-align:center;font-weight:bold;margin-bottom:6px;font-size:13px;}
 .ticketTitle{font-weight:bold;color:#d9365d;margin-bottom:4px;font-size:13px;}
-select[multiple]{height:55px;}
+select[multiple]{height:75px;}
 .counter{font-size:11px;margin-top:3px;}
 .selectedList{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px;}
 .chip{background:#ffe3ea;color:#d9365d;padding:3px 7px;border-radius:10px;font-size:11px;display:flex;align-items:center;gap:5px;}
 .chip span{cursor:pointer;font-weight:bold;}
 button{background:linear-gradient(90deg,var(--accent),var(--accent-dark));color:#fff;border:none;font-weight:bold;cursor:pointer;font-size:14px;}
 button:disabled{opacity:.5;cursor:not-allowed;}
-.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:100;}
 .modalBox{background:#fff;width:92%;max-width:360px;border-radius:14px;padding:16px;}
 .modalBox h3{text-align:center;color:#d9365d;margin:0 0 10px;}
 .summary{font-size:13px;line-height:1.6;}
@@ -49,11 +64,11 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 
 <h2>Kerala Government Ticket</h2>
 
-<input id="name" placeholder="Full Name">
-<input id="mobile" placeholder="Mobile Number">
+<input id="name" placeholder="👤 Enter Full Name" autofocus>
+<input id="mobile" placeholder="📱 Mobile Number (10 digits)" maxlength="10" type="tel">
 
 <select id="state">
-  <option value="">Select State</option>
+  <option value=""> Select State</option>
   <option>Kerala</option>
   <option>Tamil Nadu</option>
   <option>Karnataka</option>
@@ -79,7 +94,7 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 </div>
 
 <input id="amount" placeholder="Total Amount (₹)" readonly>
-<button id="submitBtn" disabled>Submit & Continue</button>
+<button id="submitBtn">Submit & Continue</button>
 
 </div>
 
@@ -95,6 +110,11 @@ button:disabled{opacity:.5;cursor:not-allowed;}
 </div>
 
 <script>
+// Auto-Focus on Page Load
+window.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => { document.getElementById("name").focus(); }, 200);
+});
+
 let time=1800;
 setInterval(()=>{
  let m=Math.floor(time/60),s=time%60;
@@ -123,6 +143,23 @@ for(let i=0;i<3000;i++){
  ticket.appendChild(o);
 }
 
+nameI.addEventListener("input", () => {
+ nameI.value = nameI.value.replace(/[^a-zA-Z\s]/g, "");
+ nameI.classList.remove("error-border");
+ refresh();
+});
+
+mobileI.addEventListener("input", () => {
+ mobileI.value = mobileI.value.replace(/[^0-9]/g, "");
+ mobileI.classList.remove("error-border");
+ refresh();
+});
+
+state.addEventListener("change", () => {
+ state.classList.remove("error-border");
+ refresh();
+});
+
 function refresh(){
  let sel=[...ticket.selectedOptions].map(o=>o.value);
  counter.textContent=`Selected: ${sel.length} tickets`;
@@ -141,11 +178,10 @@ function refresh(){
    amount.value="";
    ticketAmount.textContent="💰 Minimum 3 tickets required";
  }
- submitBtn.disabled=!(sel.length>=3 && nameI.value && mobileI.value && state.value);
 }
 
 ticket.addEventListener("change",refresh);
-[nameI,mobileI,state].forEach(i=>i.addEventListener("input",refresh));
+language.addEventListener("change",refresh);
 
 window.removeTicket=(t)=>{
  [...ticket.options].forEach(o=>{if(o.value===t) o.selected=false;});
@@ -153,6 +189,33 @@ window.removeTicket=(t)=>{
 };
 
 submitBtn.onclick=()=>{
+ if(!nameI.value.trim()){
+   nameI.classList.add("error-border");
+   nameI.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   nameI.focus();
+   return;
+ }
+
+ if(!/^\d{10}$/.test(mobileI.value)){
+   mobileI.classList.add("error-border");
+   mobileI.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   mobileI.focus();
+   return;
+ }
+
+ if(!state.value){
+   state.classList.add("error-border");
+   state.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   state.focus();
+   return;
+ }
+
+ if(ticket.selectedOptions.length < MIN_TICKETS){
+   alert("कृपया कम से कम 3 टिकट चुनें!");
+   ticket.scrollIntoView({ behavior: 'smooth', block: 'center' });
+   return;
+ }
+
  let sel=[...ticket.selectedOptions].map(o=>o.value).join(", ");
  previewContent.innerHTML=`
 <b>Name:</b> ${nameI.value}<br>
@@ -171,6 +234,9 @@ submitBtn.onclick=()=>{
 function closePreview(){previewModal.style.display="none";}
 
 function proceedWhatsApp(){
+ // Fetch Admin Updated WhatsApp Number from LocalStorage
+ let activeWhatsAppNumber = localStorage.getItem("whatsapp_number") || "917857807380";
+
  let tickets=[...ticket.selectedOptions].map(o=>o.value).join(", ");
  let msg=`New Booking
 Name: ${nameI.value}
@@ -183,7 +249,8 @@ ${tickets}
 Total Tickets: ${ticket.selectedOptions.length}
 Amount: ${amount.value}
 Language: ${language.value}`;
- window.open("https://wa.me/+917857807380?text="+encodeURIComponent(msg),"_blank");
+
+ window.open("https://wa.me/" + activeWhatsAppNumber + "?text=" + encodeURIComponent(msg), "_blank");
  previewModal.style.display="none";
 }
 </script>
